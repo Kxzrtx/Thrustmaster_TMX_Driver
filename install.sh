@@ -37,6 +37,11 @@ if [ "$L" == "PL" ]; then
     MSG_SRV_DONE="Usługa skonfigurowana i uruchomiona."
     MSG_SRV_SETUP="Konfigurowanie usługi TMDRV."
     MSG_DWNLD_TMDRV="Pobieranie TMDRV."
+    MSG_OVERSTEER_Q="Czy chcesz zainstalować Oversteer (przez Flatpak/Flathub)? [t/n]: "
+    MSG_OVERSTEER_INSTALLING="Instalowanie Oversteer przez Flathub..."
+    MSG_OVERSTEER_DONE="Oversteer zainstalowany pomyślnie!"
+    MSG_OVERSTEER_SKIP="Pomijanie instalacji Oversteer."
+    MSG_FLATPAK_MISSING="Flatpak nie jest zainstalowany. Instalowanie..."
 
 elif [ "$L" == "ES" ]; then
     MSG_PLUG="Por favor, conecte el volante Thrustmaster antes de continuar."
@@ -54,6 +59,11 @@ elif [ "$L" == "ES" ]; then
     MSG_SRV_DONE="Servicio configurado y en funcionamiento."
     MSG_SRV_SETUP="Configurando el servicio TMDRV."
     MSG_DWNLD_TMDRV="Descargando TMDRV."
+    MSG_OVERSTEER_Q="¿Desea instalar Oversteer (vía Flatpak/Flathub)? [s/n]: "
+    MSG_OVERSTEER_INSTALLING="Instalando Oversteer mediante Flathub..."
+    MSG_OVERSTEER_DONE="¡Oversteer instalado con éxito!"
+    MSG_OVERSTEER_SKIP="Omitiendo la instalación de Oversteer."
+    MSG_FLATPAK_MISSING="Flatpak no está instalado. Instalándolo primero..."
 
 elif [ "$L" == "FR" ]; then
     MSG_PLUG="Veuillez connecter votre volant Thrustmaster avant de continuer."
@@ -68,9 +78,14 @@ elif [ "$L" == "FR" ]; then
     MSG_UNSUPPORTED_SYS="Système non pris en charge."
     MSG_PACKAGE_MGR="Votre gestionnaire de paquets est : "
     MSG_T150_DVR="Téléchargement du pilote T150 (nécessaire pour le TMX) !"
-    MSG_SRV_DONE="Service configuré et en cours d’exécution."
+    MSG_SRV_DONE="Service configuré et en cours d'exécution."
     MSG_SRV_SETUP="Configuration du service TMDRV."
     MSG_DWNLD_TMDRV="Téléchargement de TMDRV."
+    MSG_OVERSTEER_Q="Voulez-vous installer Oversteer (via Flatpak/Flathub) ? [o/n]: "
+    MSG_OVERSTEER_INSTALLING="Installation d'Oversteer via Flathub..."
+    MSG_OVERSTEER_DONE="Oversteer installé avec succès !"
+    MSG_OVERSTEER_SKIP="Installation d'Oversteer ignorée."
+    MSG_FLATPAK_MISSING="Flatpak n'est pas installé. Installation en cours..."
 
 elif [ "$L" == "DE" ]; then
     MSG_PLUG="Bitte schließen Sie Ihr Thrustmaster-Lenkrad an, bevor Sie fortfahren."
@@ -88,7 +103,11 @@ elif [ "$L" == "DE" ]; then
     MSG_SRV_DONE="Dienst konfiguriert und gestartet."
     MSG_SRV_SETUP="TMDRV-Dienst wird konfiguriert."
     MSG_DWNLD_TMDRV="TMDRV wird heruntergeladen."
-
+    MSG_OVERSTEER_Q="Möchten Sie Oversteer installieren (über Flatpak/Flathub)? [j/n]: "
+    MSG_OVERSTEER_INSTALLING="Oversteer wird über Flathub installiert..."
+    MSG_OVERSTEER_DONE="Oversteer erfolgreich installiert!"
+    MSG_OVERSTEER_SKIP="Installation von Oversteer wird übersprungen."
+    MSG_FLATPAK_MISSING="Flatpak ist nicht installiert. Installation läuft..."
 else # EN
     MSG_PLUG="Please plug in your Thrustmaster wheel before continuing."
     MSG_UN_PLUG="Please unplug your Thrustmaster wheel before uninstalling."
@@ -105,6 +124,11 @@ else # EN
     MSG_SRV_DONE="Service configured and running."
     MSG_SRV_SETUP="Setting up the service for TMDRV"
     MSG_DWNLD_TMDRV="Downloading TMDRV."
+    MSG_OVERSTEER_Q="Do you want to install Oversteer (via Flatpak/Flathub)? [y/n]: "
+    MSG_OVERSTEER_INSTALLING="Installing Oversteer via Flathub..."
+    MSG_OVERSTEER_DONE="Oversteer installed successfully!"
+    MSG_OVERSTEER_SKIP="Skipping Oversteer installation."
+    MSG_FLATPAK_MISSING="Flatpak is not installed. Installing it first..."
 fi
 
 # --- Uninstall option ---
@@ -133,6 +157,11 @@ if [ "$1" == "uninstall" ]; then
         sudo rm -rf tmdrv
     fi
 
+    # Oversteer
+    if flatpak list | grep -q "io.github.berarma.Oversteer"; then
+      flatpak uninstall -y io.github.berarma.Oversteer
+    fi
+
     echo -e "${GREEN}$MSG_UNINSTALL_CMPLT${RESET}"
     exit 0
 fi
@@ -152,13 +181,15 @@ echo -e "${YELLOW}$MSG_DETECTION${RESET}"
 if [ -f /etc/debian_version ]; then
     PM="apt"
     UPDATE="sudo apt update"
-    # Installing system dependencies for Debian/Ubuntu
     INSTALL="sudo apt install -y git python3 python3-pip"
 elif [ -f /etc/arch-release ]; then
     PM="pacman"
     UPDATE="sudo pacman -Sy"
-    # Installing system dependencies for Arch
     INSTALL="sudo pacman -S --noconfirm git python python-pip base-devel linuxconsole"
+elif [ -f /etc/fedora-release ] || grep -qi "fedora\|rhel\|centos" /etc/os-release 2>/dev/null; then
+    PM="dnf"
+    UPDATE="sudo dnf check-update || true"
+    INSTALL="sudo dnf install -y git python3 python3-pip"
 else
     echo -e "${RED}$MSG_UNSUPPORTED_SYS${RESET}"
     exit 1
@@ -172,9 +203,10 @@ $INSTALL
 # --- Install DKMS and kernel headers ---
 echo -e "${YELLOW}$MSG_INSTALLING_DKHD${RESET}"
 if [ "$PM" == "pacman" ]; then
-    # Automatically sellecting system headers for diffrent linux kernels
     KERNEL_PKG=$(pacman -Qqo "/usr/lib/modules/$(uname -r)/pkgbase" 2>/dev/null || echo "linux")
     sudo pacman -S --noconfirm dkms "${KERNEL_PKG}-headers"
+elif [ "$PM" == "dnf" ]; then
+    sudo dnf install -y dkms "kernel-devel-$(uname -r)" gcc make
 else
     KERNEL_VER=$(uname -r)
     sudo apt install -y linux-headers-"$KERNEL_VER" dkms
@@ -185,6 +217,8 @@ if ! python3 -c "import usb1" &>/dev/null; then
     echo -e "${YELLOW}python-libusb1...${RESET}"
     if [ "$PM" == "pacman" ]; then
         sudo pacman -S --noconfirm python-libusb1
+    elif [ "$PM" == "dnf" ]; then
+        sudo dnf install -y python3-libusb1 || pip3 install libusb1 --break-system-packages
     else
         sudo apt install -y python3-libusb1
     fi
@@ -233,6 +267,30 @@ sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl enable tmdrv.service
 sudo systemctl restart tmdrv.service
+
+# --- Oversteer Installation ---
+
+read -rp "$MSG_OVERSTEER_Q" OVERSTEER_CHOICE
+if [[ "$OVERSTEER_CHOICE" =~ ^[YyTtSsOoJj]$ ]]; then
+    # Install flatpak if missing
+    if ! command -v flatpak &>/dev/null; then
+        echo -e "${YELLOW}$MSG_FLATPAK_MISSING${RESET}"
+        if [ "$PM" == "apt" ]; then
+            sudo apt install -y flatpak
+        elif [ "$PM" == "pacman" ]; then
+            sudo pacman -S --noconfirm flatpak
+        elif [ "$PM" == "dnf" ]; then
+            sudo dnf install -y flatpak
+        fi
+        flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    fi
+
+    echo -e "${YELLOW}$MSG_OVERSTEER_INSTALLING${RESET}"
+    flatpak install -y flathub io.github.berarma.Oversteer
+    echo -e "${GREEN}$MSG_OVERSTEER_DONE${RESET}"
+else
+    echo -e "${YELLOW}$MSG_OVERSTEER_SKIP${RESET}"
+fi
 
 echo -e "${GREEN}$MSG_SRV_DONE${RESET}"
 echo -e "${GREEN}$MSG_DONE${RESET}"

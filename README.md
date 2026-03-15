@@ -5,7 +5,7 @@ This repository contains `install.sh`, a script authored by me to automate insta
 - [T150 Driver](https://github.com/scarburato/t150_driver)
 - [TMDRV](https://github.com/her001/tmdrv)
 
-- Note: Tested and works on **Arch Linux / CachyOS / Linux Mint / Ubuntu / Debian and Arch - based distors** 
+- Note: Tested and works on **Arch Linux / CachyOS / Linux Mint / Ubuntu / Fedora / Debian and Arch - based distors** 
   automatically installs approporiate headers for your installed kernel, (for example zen kernel - linux-zen-headers)
 
 **Disclaimer:** I am NOT the author of T150 Driver or TMDRV. This script is provided as-is to simplify installation. Use at your own risk.
@@ -19,7 +19,7 @@ Follow the on-screen instructions. When everything is done, restart your compute
 
 1. **Clone this repository:**
 
-- In terminal of your choice type: git clone https://github.com/Kuba7500/Thrustmaster_TMX_Driver.git
+- In terminal of your choice type: git clone https://github.com/Kxzrtx/Thrustmaster_TMX_Driver
 
 2. **Run the installation script**
 

@@ -8,7 +8,7 @@ This repository contains `install.sh`, a script authored by me to automate insta
 - Note: Tested and works on **Arch Linux / CachyOS / Linux Mint / Ubuntu / Fedora / Debian and Arch - based distros** 
   automatically installs approporiate headers for your installed kernel, (for example zen kernel - linux-zen-headers)
 
-**Disclaimer:** I am NOT the author of T150 Driver or TMDRV. This script is provided as-is to simplify installation. Use at your own risk.
+**Disclaimer:** I am NOT the author of T150 Driver or TMDRV, neither of Oversteer. This script is provided as-is to simplify installation. Use at your own risk.
 
 ## Installation
 To install drivers for your Thrustmaster TMX you need to follow those few, simple steps:

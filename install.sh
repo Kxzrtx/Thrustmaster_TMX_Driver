@@ -185,7 +185,7 @@ if [ -f /etc/debian_version ]; then
 elif [ -f /etc/arch-release ]; then
     PM="pacman"
     UPDATE="sudo pacman -Sy"
-    INSTALL="sudo pacman -S --noconfirm git python python-pip base-devel linuxconsole"
+    INSTALL="sudo pacman -S --noconfirm --needed git python python-pip base-devel linuxconsole"
 elif [ -f /etc/fedora-release ] || grep -qi "fedora\|rhel\|centos" /etc/os-release 2>/dev/null; then
     PM="dnf"
     UPDATE="sudo dnf check-update || true"
@@ -204,7 +204,7 @@ $INSTALL
 echo -e "${YELLOW}$MSG_INSTALLING_DKHD${RESET}"
 if [ "$PM" == "pacman" ]; then
     KERNEL_PKG=$(pacman -Qqo "/usr/lib/modules/$(uname -r)/pkgbase" 2>/dev/null || echo "linux")
-    sudo pacman -S --noconfirm dkms "${KERNEL_PKG}-headers"
+    sudo pacman -S --noconfirm --needed dkms "${KERNEL_PKG}-headers"
 elif [ "$PM" == "dnf" ]; then
     sudo dnf install -y dkms "kernel-devel-$(uname -r)" gcc make
 else
@@ -216,7 +216,7 @@ fi
 if ! python3 -c "import usb1" &>/dev/null; then
     echo -e "${YELLOW}python-libusb1...${RESET}"
     if [ "$PM" == "pacman" ]; then
-        sudo pacman -S --noconfirm python-libusb1
+        sudo pacman -S --noconfirm --needed python-libusb1
     elif [ "$PM" == "dnf" ]; then
         sudo dnf install -y python3-libusb1 || pip3 install libusb1 --break-system-packages
     else
@@ -278,7 +278,7 @@ if [[ "$OVERSTEER_CHOICE" =~ ^[YyTtSsOoJj]$ ]]; then
         if [ "$PM" == "apt" ]; then
             sudo apt install -y flatpak
         elif [ "$PM" == "pacman" ]; then
-            sudo pacman -S --noconfirm flatpak
+            sudo pacman -S --noconfirm --needed flatpak
         elif [ "$PM" == "dnf" ]; then
             sudo dnf install -y flatpak
         fi

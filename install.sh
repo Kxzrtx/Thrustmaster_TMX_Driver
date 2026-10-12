@@ -236,7 +236,7 @@ if ! python3 -c "import usb1" &>/dev/null; then
     elif [ "$PM" == "dnf" ]; then
         sudo dnf install -y python3-libusb1 || pip3 install libusb1 --break-system-packages
     else
-        sudo apt install -y python3-libusb1
+        sudo apt install -y python3-usb
     fi
 fi
 
@@ -285,28 +285,43 @@ sudo systemctl enable tmdrv.service
 sudo systemctl restart tmdrv.service
 
 # --- Oversteer Installation ---
-
 read -rp "$MSG_OVERSTEER_Q" OVERSTEER_CHOICE
+
 if [[ "$OVERSTEER_CHOICE" =~ ^[YyTtSsOoJj]$ ]]; then
-    # Install flatpak if missing
     if ! command -v flatpak &>/dev/null; then
         echo -e "${YELLOW}$MSG_FLATPAK_MISSING${RESET}"
-        if [ "$PM" == "apt" ]; then
-            sudo apt install -y flatpak
-        elif [ "$PM" == "pacman" ]; then
-            sudo pacman -S --noconfirm --needed flatpak
-        elif [ "$PM" == "dnf" ]; then
-            sudo dnf install -y flatpak
-        fi
-        flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+        case "$PM" in
+            apt)
+                sudo apt install -y flatpak || exit 1
+                ;;
+            pacman)
+                sudo pacman -S --noconfirm --needed flatpak || exit 1
+                ;;
+            dnf)
+                sudo dnf install -y flatpak || exit 1
+                ;;
+        esac
     fi
 
+    # Verify Flatpak is available before using it
+    if ! command -v flatpak &>/dev/null; then
+        echo -e "${RED}Flatpak installation failed.${RESET}"
+        exit 1
+    fi
+
+    # Add Flathub and install Oversteer
+    sudo flatpak remote-add --system --if-not-exists \
+        flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
     echo -e "${YELLOW}$MSG_OVERSTEER_INSTALLING${RESET}"
-    flatpak install -y flathub io.github.berarma.Oversteer
+    sudo flatpak install --system -y flathub io.github.berarma.Oversteer
+
     echo -e "${GREEN}$MSG_OVERSTEER_DONE${RESET}"
 else
     echo -e "${YELLOW}$MSG_OVERSTEER_SKIP${RESET}"
 fi
+
 
 echo -e "${GREEN}$MSG_SRV_DONE${RESET}"
 echo -e "${GREEN}"
